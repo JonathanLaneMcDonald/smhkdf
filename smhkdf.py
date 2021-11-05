@@ -3,50 +3,37 @@ import argparse
 import base64
 import getpass
 from hashlib import sha256
+from tqdm import tqdm
 
 
 def mhkdf(public, secret, modulus, matches):
 
-    public_bytes = sha256(public.encode("utf-8")).digest()
-    secret_bytes = sha256(secret.encode("utf-8")).digest()
+	hash_stack = [sha256(sha256(public.encode("utf-8")).digest() + sha256(secret.encode("utf-8")).digest()).digest()]
 
-    hash_stack = [sha256(public_bytes + secret_bytes).digest()]
+	for _ in tqdm(range(len(hash_stack), matches)):
+		ref = sha256(hash_stack[-1]).digest()
+		ptr = int.from_bytes(ref, "big") % len(hash_stack)
+		mod = int.from_bytes(sha256(ref + hash_stack[ptr]).digest(), "big") % modulus
 
-    hashes = 0
-    while len(hash_stack) < matches:
+		while int.from_bytes(ref, "big") % modulus != mod:
+			ref = sha256(ref).digest()
 
-        reference = hash_stack[-1]
-        friend_pointer = int.from_bytes(reference, "big") % len(hash_stack)
-        friend = hash_stack[friend_pointer]
+		hash_stack.append(ref)
 
-        mixer = sha256(reference + friend).digest()
-        mixer_match = int.from_bytes(mixer, "big") % modulus
-        mixer = sha256(mixer).digest()
-
-        while int.from_bytes(mixer, "big") % modulus != mixer_match:
-            hashes += 1
-            mixer = sha256(mixer).digest()
-
-        hash_stack.append(mixer)
-
-    print(f"sha256 Hashes: {hashes} hash stack length: {len(hash_stack)}")
-
-    return hash_stack[-1]
+	return hash_stack[-1]
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--public", type=str)
-    parser.add_argument("--modulus", type=int)
-    parser.add_argument("--matches", type=int)
+	parser = argparse.ArgumentParser()
+	parser.add_argument("--memo", type=str, required=True)
+	parser.add_argument("--modulus", type=int, required=True)
+	parser.add_argument("--matches", type=int, required=True)
 
-    args = parser.parse_args()
+	args = parser.parse_args()
 
-    secret = getpass.getpass(prompt="--secret:")
+	secret = getpass.getpass(prompt="--secret:")
 
-    key = mhkdf(args.public, secret, args.modulus, args.matches)
+	key = mhkdf(args.memo, secret, args.modulus, args.matches)
 
-    print(f"b16: {base64.b16encode(key).decode('utf-8')}")
-    print(f"b32: {base64.b32encode(key).decode('utf-8')}")
-    print(f"b64: {base64.b64encode(key).decode('utf-8')}")
-    print(f"b85: {base64.b85encode(key).decode('utf-8')}")
+	print(f"b64: {base64.b64encode(key).decode('utf-8')}")
+	print(f"b85: {base64.b85encode(key).decode('utf-8')}")
