@@ -22,17 +22,17 @@ Computational hardness derives from the requirement of finding a partial hash co
 
 Say I want to use a kdf to generate passwords for Reddit? Not so important, right? I might use something like this
 
-	python smhkdf.py --public for_reddit --modulus 1000 --matches 1000
+	python smhkdf.py --memo for_reddit --modulus 1000 --matches 1000
 
 or alternatively
 
-	python smhkdf.py --public random_string_you_can_email_to_yourself_or_something --modulus 1000 --matches 1000
+	python smhkdf.py --memo random_string_you_can_email_to_yourself_or_something --modulus 1000 --matches 1000
 
 and you'll be prompted for a secret that'll be used to create a key you can use
 
 Say you've made an account to protect your favorite recipes (and you're very serious about it!). Maybe you'd use larger values for [--modulus] and [--matches] like this
 
-	python smhkdf.py --public recipe_website --modulus 10000 --matches 1000000
+	python smhkdf.py --memo recipe_website --modulus 10000 --matches 1000000
 
 ### Note: computational cost is proportional to [--modulus] x [--matches]
 
