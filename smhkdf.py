@@ -1,39 +1,66 @@
 
 import argparse
-import base64
 import getpass
+import pyperclip
+
+from base64 import b64encode, b85encode
 from hashlib import sha256
 from tqdm import tqdm
 
 
 def mhkdf(public, secret, modulus, matches):
 
-	hash_stack = [sha256(sha256(public.encode("utf-8")).digest() + sha256(secret.encode("utf-8")).digest()).digest()]
+    hash_stack = [sha256(sha256(public.encode("utf-8")).digest() + sha256(secret.encode("utf-8")).digest()).digest()]
 
-	for _ in tqdm(range(len(hash_stack), matches)):
-		ref = sha256(hash_stack[-1]).digest()
-		ptr = int.from_bytes(ref, "big") % len(hash_stack)
-		mod = int.from_bytes(sha256(ref + hash_stack[ptr]).digest(), "big") % modulus
+    for _ in tqdm(range(len(hash_stack), matches)):
+        ref = sha256(hash_stack[-1]).digest()
+        ptr = int.from_bytes(ref, "big") % len(hash_stack)
+        mod = int.from_bytes(sha256(ref + hash_stack[ptr]).digest(), "big") % modulus
 
-		while int.from_bytes(ref, "big") % modulus != mod:
-			ref = sha256(ref).digest()
+        while int.from_bytes(ref, "big") % modulus != mod:
+            ref = sha256(ref).digest()
 
-		hash_stack.append(ref)
+        hash_stack.append(ref)
 
-	return hash_stack[-1]
+    return hash_stack[-1]
 
 
 if __name__ == "__main__":
-	parser = argparse.ArgumentParser()
-	parser.add_argument("--memo", type=str, required=True)
-	parser.add_argument("--modulus", type=int, required=True)
-	parser.add_argument("--matches", type=int, required=True)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--memo", type=str, required=True)
+    parser.add_argument("--modulus", type=int, default=None)
+    parser.add_argument("--matches", type=int, default=None)
+    parser.add_argument("--profile", type=str, default=None)
+    parser.add_argument("--base64", action="store_true", default=False)
+    parser.add_argument("--print_to_cli", action="store_true", default=False)
 
-	args = parser.parse_args()
+    args = parser.parse_args()
 
-	secret = getpass.getpass(prompt="--secret:")
+    profiles = {
+        "easy":             {"mod": 1,     "match": 1000},
+        "medium":           {"mod": 10,    "match": 10000},
+        "hard":             {"mod": 100,   "match": 100000},
+        "recovery":         {"mod": 1000,  "match": 1000000},
+        "ultra_recovery":   {"mod": 10000, "match": 10000000}
+    }
 
-	key = mhkdf(args.memo, secret, args.modulus, args.matches)
+    mod, match = None, None
 
-	print(f"b64: {base64.b64encode(key).decode('utf-8')}")
-	print(f"b85: {base64.b85encode(key).decode('utf-8')}")
+    if args.profile is not None:
+        if args.profile not in profiles:
+            raise ValueError(f"Profile {args.profile} not in {profiles.keys()}")
+        mod, match = profiles[args.profile]["mod"], profiles[args.profile]["match"]
+    else:
+        if args.modulus is None or args.matches is None:
+            raise ValueError("Must define either a profile or modulus and matches")
+        mod, match = args.modulus, args.matches
+
+    key = mhkdf(args.memo, getpass.getpass(prompt="--secret:"), mod, match)
+
+    deliverable_string = (b64encode(key) if args.base64 else b85encode(key)).decode('utf-8')
+
+    if args.print_to_cli:
+        print(deliverable_string)
+    else:
+        pyperclip.copy(deliverable_string)
+        print(f"Copied {'base64' if args.base64 else 'base85'} password to clipboard")
