@@ -18,6 +18,14 @@ Computation of the (n+1)th hash value involves random access of the stack of has
 
 Computational hardness derives from the requirement of finding a partial hash collision to generate the (n+1)th hash. The probability of finding a colliding hash is 1/[--modulus].
 
+### Presets
+
+A handful of "presets" are defined: ["easy", "medium", "hard", "recovery", "ultra_recovery"]
+
+* The "easy" preset completes almost instantaneously. 
+* Progressively higher levels require 10x more compute per retained hash and retain 10x more hashes.
+* The "hard" preset computes a key in about 4 seconds on a Ryzen 5 5600X.
+
 ## Usage
 
 Say I want to use a kdf to generate passwords for Reddit? Not so important, right? I might use something like this
@@ -27,6 +35,16 @@ Say I want to use a kdf to generate passwords for Reddit? Not so important, righ
 or alternatively
 
 	python smhkdf.py --memo random_string_you_can_email_to_yourself_or_something --modulus 1000 --matches 1000
+
+or, using a preset, 
+
+	python smhkdf.py --memo domain_name.com --preset hard
+
+or, optionally print to cli (default is copy to clipboard),
+
+	python smhkdf.py --memo domain_name.com --preset hard --print_to_cli
+
+_Note: The clipboard is weird in Linux, but works properly on Mac and Windows. So to (myself and) my Linux friends, maybe use the --print_to_cli option :/_
 
 and you'll be prompted for a secret that'll be used to create a key you can use
 

@@ -30,13 +30,13 @@ if __name__ == "__main__":
     parser.add_argument("--memo", type=str, required=True)
     parser.add_argument("--modulus", type=int, default=None)
     parser.add_argument("--matches", type=int, default=None)
-    parser.add_argument("--profile", type=str, default=None)
+    parser.add_argument("--preset", type=str, default=None)
     parser.add_argument("--base64", action="store_true", default=False)
     parser.add_argument("--print_to_cli", action="store_true", default=False)
 
     args = parser.parse_args()
 
-    profiles = {
+    presets = {
         "easy":             {"mod": 1,     "match": 1000},
         "medium":           {"mod": 10,    "match": 10000},
         "hard":             {"mod": 100,   "match": 100000},
@@ -46,13 +46,13 @@ if __name__ == "__main__":
 
     mod, match = None, None
 
-    if args.profile is not None:
-        if args.profile not in profiles:
-            raise ValueError(f"Profile {args.profile} not in {profiles.keys()}")
-        mod, match = profiles[args.profile]["mod"], profiles[args.profile]["match"]
+    if args.preset is not None:
+        if args.preset not in presets:
+            raise ValueError(f"Preset {args.preset} not in {presets.keys()}")
+        mod, match = presets[args.preset]["mod"], presets[args.preset]["match"]
     else:
         if args.modulus is None or args.matches is None:
-            raise ValueError("Must define either a profile or modulus and matches")
+            raise ValueError("Must define either a preset or modulus and matches")
         mod, match = args.modulus, args.matches
 
     key = mhkdf(args.memo, getpass.getpass(prompt="--secret:"), mod, match)
