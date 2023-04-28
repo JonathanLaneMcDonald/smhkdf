@@ -12,7 +12,7 @@ def mhkdf(public, secret, modulus, matches):
 
     hash_stack = [sha256(sha256(public.encode("utf-8")).digest() + sha256(secret.encode("utf-8")).digest()).digest()]
 
-    for _ in tqdm(range(len(hash_stack), matches)):
+    for _ in tqdm(range(len(hash_stack), matches+1)):
         ref = sha256(hash_stack[-1]).digest()
         ptr = int.from_bytes(ref, "big") % len(hash_stack)
         mod = int.from_bytes(sha256(ref + hash_stack[ptr]).digest(), "big") % modulus
